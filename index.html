@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Hospital Operations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay active">
+        <div class="glass-panel login-card flex-col">
+            <h2 id="login-title">Unified Hospital Login</h2>
+            <form id="login-form">
+                <input type="text" id="username" class="dark-input" placeholder="Username" required>
+                <input type="password" id="password" class="dark-input mt-4" placeholder="Password" required>
+                <button type="submit" class="primary-btn mt-4">Login</button>
+            </form>
+            <form id="register-form" style="display:none;">
+                <input type="text" id="reg-username" class="dark-input" placeholder="Username" required>
+                <input type="password" id="reg-password" class="dark-input mt-4" placeholder="Password" required>
+                <button type="submit" class="primary-btn mt-4">Register as Patient</button>
+            </form>
+            <div id="login-error" class="text-red mt-4" style="display:none;"></div>
+            <div id="login-success" class="text-green mt-4" style="display:none;"></div>
+            <button id="toggle-register-btn" class="text-btn mt-4" style="color: #94a3b8; background: none; border: none; cursor: pointer; text-decoration: underline;">Don't have an account? Register</button>
+        </div>
+    </div>
+
+    <!-- App Content -->
+    <div id="app-content" style="display: none; flex-direction: column; min-height: 100vh;">
+        <header class="dashboard-header glass-panel">
+            <div class="header-content">
+                <div class="brand">
+                    <div class="logo"></div>
+                    <h1>Unified Hospital Operations</h1>
+                </div>
+                <div class="header-right">
+                    <span id="user-role" class="badge badge-blue"></span>
+                    <button id="logout-btn" class="secondary-btn">Logout</button>
+                </div>
+            </div>
+            <div class="header-border"></div>
+        </header>
+
+        <main class="dashboard-container">
+            <!-- Status Bar -->
+            <section class="status-bar" id="status-bar">
+                <div class="status-card glass-panel">
+                    <div class="status-label">Total Patients</div>
+                    <div class="status-value" id="status-total">-</div>
+                </div>
+                <div class="status-card glass-panel">
+                    <div class="status-label">Currently Admitted</div>
+                    <div class="status-value text-blue" id="status-admitted">-</div>
+                </div>
+                <div class="status-card glass-panel">
+                    <div class="status-label">Pending Lab Results</div>
+                    <div class="status-value text-amber" id="status-pending">-</div>
+                </div>
+                <div class="status-card glass-panel">
+                    <div class="status-label">Data Quality Score</div>
+                    <div class="status-value text-green" id="status-dq">-</div>
+                </div>
+            </section>
+
+            <!-- Tab Navigation -->
+            <nav class="tab-nav" id="tab-nav">
+                <button class="tab-btn active" data-target="tab-capacity" id="nav-capacity">Capacity Command</button>
+                <button class="tab-btn" data-target="tab-bottleneck" id="nav-bottleneck">Bottleneck Radar</button>
+                <button class="tab-btn" data-target="tab-data" id="nav-data">Data Trust</button>
+                <button class="tab-btn" data-target="tab-brief" id="nav-brief">Daily Brief</button>
+                <button class="tab-btn" data-target="tab-patient-list" id="nav-patient-list" style="display:none;">Patient List</button>
+                <button class="tab-btn" data-target="tab-my-portal" id="nav-my-portal" style="display:none;">My Portal</button>
+                <button class="tab-btn" data-target="tab-user-management" id="nav-user-management" style="display:none;">User Management</button>
+            </nav>
+
+            <!-- Tab Contents -->
+            <div class="tab-contents">
+                
+                <!-- Capacity Command -->
+                <section id="tab-capacity" class="tab-pane active">
+                    <!-- Admin Controls (Conditional) -->
+                    <div id="admin-controls" class="glass-panel card flex-col mb-4" style="display: none;">
+                        <h2>Admin Controls: Update Bed Count</h2>
+                        <form id="update-beds-form" style="display: flex; gap: 1rem; align-items: center;">
+                            <input type="date" id="admin-date" class="dark-input" required>
+                            <input type="text" id="admin-ward" class="dark-input" placeholder="Ward (e.g. ICU)" required>
+                            <input type="number" id="admin-count" class="dark-input" placeholder="New Occupied Count" required>
+                            <button type="submit" class="primary-btn">Update</button>
+                        </form>
+                    </div>
+
+                    <div class="grid-layout-2-1">
+                        <div class="glass-panel card flex-col">
+                            <h2>Ward Occupancy</h2>
+                            <div class="ward-gauges-container" id="ward-gauges">
+                                <!-- Gauges populated by JS -->
+                            </div>
+                        </div>
+                        <div class="glass-panel card flex-col">
+                            <h2>Average Length of Stay (Days)</h2>
+                            <div class="chart-container">
+                                <canvas id="chart-los"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-panel card flex-col mt-4">
+                        <h2>Admissions vs Discharges (30 Days)</h2>
+                        <div class="chart-container large">
+                            <canvas id="chart-admissions"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Bottleneck Radar -->
+                <section id="tab-bottleneck" class="tab-pane">
+                    <div class="grid-layout-3">
+                        <div class="glass-panel card metric-card">
+                            <h3>Median Turnaround</h3>
+                            <div class="metric-val" id="metric-tat">-</div>
+                        </div>
+                        <div class="glass-panel card metric-card">
+                            <h3>Flagged Anomalies</h3>
+                            <div class="metric-val text-red" id="metric-anomalies">-</div>
+                        </div>
+                        <div class="glass-panel card metric-card">
+                            <h3>Pending Criticals</h3>
+                            <div class="metric-val text-amber" id="metric-critical-pending">-</div>
+                        </div>
+                    </div>
+
+                    <div class="grid-layout-2">
+                        <div class="glass-panel card flex-col">
+                            <h2>Lab Turnaround by Priority</h2>
+                            <div class="chart-container">
+                                <canvas id="chart-turnaround"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-panel card flex-col">
+                            <h2>Long-Stay Patients (>7 Days)</h2>
+                            <div class="table-container">
+                                <table id="table-long-stay">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient ID</th>
+                                            <th>Ward</th>
+                                            <th>Dept</th>
+                                            <th>LOS (Days)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid-layout-2 mt-4">
+                        <div class="glass-panel card flex-col">
+                            <h2>Lab Anomalies</h2>
+                            <div class="table-container">
+                                <table id="table-anomalies">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Test</th>
+                                            <th>Actual (hrs)</th>
+                                            <th>Exp. (hrs)</th>
+                                            <th>Severity</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="glass-panel card flex-col">
+                            <h2>Pending Results</h2>
+                            <div class="table-container">
+                                <table id="table-pending">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient ID</th>
+                                            <th>Test</th>
+                                            <th>Priority</th>
+                                            <th>Waiting (hrs)</th>
+                                            <th>Severity</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Trust -->
+                <section id="tab-data" class="tab-pane">
+                    <div class="glass-panel card flex-col mb-4">
+                        <h2>Ward Confidence Scores</h2>
+                        <div class="confidence-grid" id="confidence-cards">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <div class="grid-layout-2-1">
+                        <div class="glass-panel card flex-col">
+                            <div class="header-with-action">
+                                <h2>Occupancy: HIS vs Manual</h2>
+                                <select id="ward-filter-select" class="dark-select">
+                                    <option value="all">All Wards</option>
+                                </select>
+                            </div>
+                            <div class="chart-container large">
+                                <canvas id="chart-occupancy"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-panel card flex-col">
+                            <h2>Data Imputation (Missing Data)</h2>
+                            <div id="missing-data-summary" class="data-summary">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel card flex-col mt-4">
+                        <div class="header-with-action">
+                            <h2>Conflict Log</h2>
+                            <input type="text" id="conflict-search" class="dark-input" placeholder="Search conflicts...">
+                        </div>
+                        <div class="table-container">
+                            <table id="table-conflicts">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Rule / Category</th>
+                                        <th>Description</th>
+                                        <th>Field (A vs B)</th>
+                                        <th>Resolution</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Daily Brief -->
+                <section id="tab-brief" class="tab-pane">
+                    <div class="glass-panel card flex-col narrative-card">
+                        <h2>Automated Operations Brief</h2>
+                        <div id="daily-narrative" class="narrative-content">
+                            Loading brief...
+                        </div>
+                    </div>
+                    
+                    <div class="grid-layout-2 mt-4">
+                        <div class="glass-panel card flex-col">
+                            <h2>Active Alerts</h2>
+                            <div id="alerts-container" class="alerts-list">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                        <div class="glass-panel card flex-col">
+                            <h2>Department Breakdown</h2>
+                            <div class="table-container">
+                                <table id="table-department-brief">
+                                    <thead>
+                                        <tr>
+                                            <th>Department</th>
+                                            <th>Total Admissions</th>
+                                            <th>Avg LOS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Patient List (Doctor) -->
+                <section id="tab-patient-list" class="tab-pane">
+                    <div class="glass-panel card flex-col">
+                        <h2>Patient List</h2>
+                        <div class="table-container">
+                            <table id="table-patients">
+                                <thead>
+                                    <tr>
+                                        <th>Patient ID</th>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Ward</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- My Portal (Patient) -->
+                <section id="tab-my-portal" class="tab-pane">
+                    <div class="glass-panel card flex-col mb-4">
+                        <h2>My Admission Status</h2>
+                        <div class="metric-val text-blue" id="portal-status">Loading...</div>
+                        <div class="mt-4" id="portal-ward">Ward: -</div>
+                    </div>
+                    <div class="glass-panel card flex-col">
+                        <h2>My Lab Results</h2>
+                        <div class="table-container">
+                            <table id="table-my-labs">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Test</th>
+                                        <th>Status</th>
+                                        <th>Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- User Management (Admin) -->
+                <section id="tab-user-management" class="tab-pane">
+                    <div class="grid-layout-2-1">
+                        <div class="glass-panel card flex-col">
+                            <h2>User Management</h2>
+                            <div class="table-container">
+                                <table id="table-users">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Role</th>
+                                            <th>Patient ID</th>
+                                            <th>Created At</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="glass-panel card flex-col">
+                            <h2>Create Staff User</h2>
+                            <form id="create-user-form" style="display: flex; flex-direction: column; gap: 1rem;">
+                                <input type="text" id="new-username" class="dark-input" placeholder="Username" required>
+                                <input type="password" id="new-password" class="dark-input" placeholder="Password" required>
+                                <select id="new-role" class="dark-select" required>
+                                    <option value="" disabled selected>Select Role</option>
+                                    <option value="Admin">Admin</option>
+                                    <option value="Doctor">Doctor</option>
+                                    <option value="Employee">Employee</option>
+                                    <option value="Patient">Patient</option>
+                                </select>
+                                <input type="text" id="new-patient-id" class="dark-input" placeholder="Patient ID (Optional)">
+                                <button type="submit" class="primary-btn mt-4">Create User</button>
+                            </form>
+                            <div id="create-user-msg" class="mt-4" style="display:none;"></div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+        <footer class="dashboard-footer">
+            Powered by Unified Hospital Operations Reporting System
+        </footer>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+            <p>Loading Operations Data...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
