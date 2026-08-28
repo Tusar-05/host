@@ -33,7 +33,7 @@ const colors = {
     purple: '#8b5cf6'
 };
 
-const API_BASE = 'https://charlotte-facial-visible-validity.trycloudflare.com';
+const API_BASE = 'https://contemporary-claims-hours-activity.trycloudflare.com';
 
 async function init() {
     updateTime();
