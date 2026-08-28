@@ -33,7 +33,7 @@ const colors = {
     purple: '#8b5cf6'
 };
 
-const API_BASE = 'https://cave-evident-machines-contemporary.trycloudflare.com/api';
+const API_BASE = 'https://cave-evident-machines-contemporary.trycloudflare.com';
 
 async function init() {
     updateTime();
