@@ -33,7 +33,7 @@ const colors = {
     purple: '#8b5cf6'
 };
 
-const API_BASE = 'https://changing-utilities-slot-rapid.trycloudflare.com/api';
+const API_BASE = 'https://owners-kick-pottery-jennifer.trycloudflare.com';
 
 async function init() {
     updateTime();
