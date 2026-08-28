@@ -33,7 +33,7 @@ const colors = {
     purple: '#8b5cf6'
 };
 
-const API_BASE = 'https://contemporary-claims-hours-activity.trycloudflare.com';
+const API_BASE = 'https://YOUR_CLOUDFLARE_URL.trycloudflare.com/api';
 
 async function init() {
     updateTime();
